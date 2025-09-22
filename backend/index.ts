@@ -8,15 +8,15 @@ dotenv.config();
 
 const app = express();
 
-app.get("/", (_, res) => {
+app.get('/', (_: express.Request, res: express.Response) => {
 	return res.status(200).json({
-		message:"I'm coming from backend",
+		message: "I'm coming from backend",
 		success: true,
-	})
-})
+	});
+});
 
 //middlewares
-app.use(express.json);
+app.use(express.json());
 app.use(cookieParser());
 app.use(urlencoded({ extended: true }));
 const corsOptions = {
@@ -25,9 +25,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT ?? 3000);
 
 app.listen(PORT, () => {
 	connectDB();
-	console.log(`Server listen at port ${PORT}`);
+	console.log(`Server listening on http://localhost:${PORT}`);
 });
