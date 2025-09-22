@@ -2,6 +2,7 @@ import express, { urlencoded } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import connectDB from './utils/db.js';
 
 dotenv.config();
 
@@ -27,5 +28,6 @@ app.use(cors(corsOptions));
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
+	connectDB();
 	console.log(`Server listen at port ${PORT}`);
 });
