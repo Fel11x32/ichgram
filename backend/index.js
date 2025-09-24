@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 
-app.get('/', (_: express.Request, res: express.Response) => {
+app.get('/', (_, res) => {
 	return res.status(200).json({
 		message: "I'm coming from backend",
 		success: true,
@@ -25,7 +25,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 	connectDB();
