@@ -1,33 +1,42 @@
+import 'dotenv/config';
 import express, { urlencoded } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import connectDB from './utils/db.js';
 
-dotenv.config();
+import './models/user.model.js';
+import './models/post.model.js';
+
+import userRoutes from './routes/user.route.js';
 
 const app = express();
 
+app.use(express.json());
+app.use(urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(
+	cors({
+		origin: 'http://localhost:5173',
+		credentials: true,
+	})
+);
+
 app.get('/', (_, res) => {
-	return res.status(200).json({
-		message: "I'm coming from backend",
-		success: true,
-	});
+	return res
+		.status(200)
+		.json({ message: "I'm coming from backend", success: true });
 });
 
-//middlewares
-app.use(express.json());
-app.use(cookieParser());
-app.use(urlencoded({ extended: true }));
-const corsOptions = {
-	origin: 'http://localhost:5173',
-	credentials: true,
-};
-app.use(cors(corsOptions));
+app.use('/api/v1/user', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-	connectDB();
-	console.log(`Server listening on http://localhost:${PORT}`);
-});
+try {
+	await connectDB();
+	app.listen(PORT, () => {
+		console.log(`Server listening on http://localhost:${PORT}`);
+	});
+} catch (err) {
+	console.error('DB connection failed:', err);
+	process.exit(1);
+}
