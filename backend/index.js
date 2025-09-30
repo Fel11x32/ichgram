@@ -6,8 +6,11 @@ import connectDB from './utils/db.js';
 
 import './models/user.model.js';
 import './models/post.model.js';
+import './models/comment.model.js';
 
 import userRoutes from './routes/user.route.js';
+import postRoutes from './routes/post.route.js';
+import messageRoutes from './routes/message.route.js';
 
 const app = express();
 
@@ -28,6 +31,8 @@ app.get('/', (_, res) => {
 });
 
 app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/post', postRoutes);
+app.use('/api/v1/message', messageRoutes);
 
 const PORT = process.env.PORT || 3000;
 

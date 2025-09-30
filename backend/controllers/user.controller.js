@@ -74,7 +74,17 @@ export const login = async (req, res) => {
 			});
 		}
 
-		const safeUser = formatUser(user);
+		const populatedPosts = await Promise.all(
+			user.posts.map(async postId => {
+				const post = await Post.findById(postId);
+				if (post.author.equals(user._id)) {
+					return post;
+				}
+				return null;
+			})
+		);
+
+		const safeUser = formatUser(user, populatedPosts);
 
 		if (!process.env.JWT_SECRET) {
 			return res
