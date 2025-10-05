@@ -1,10 +1,11 @@
 import { User } from '../models/user.model.js';
+import { Post } from '../models/post.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import getDataUri from '../utils/datauri.js';
 import cloudinary from '../utils/cloudinary.js';
 
-function formatUser(userDoc, posts = []) {
+function formatUser(userDoc, posts) {
 	return {
 		_id: userDoc._id,
 		username: userDoc.username,
