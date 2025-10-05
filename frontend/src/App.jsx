@@ -1,11 +1,15 @@
-import Button from '@mui/material/Button';
-import Signup from './components/Signup/Signup';
+import { SnackbarProvider } from 'notistack';
+import Signup from './components/Signup';
 
 function App() {
 	return (
-		<>
+		<SnackbarProvider
+			maxSnack={3}
+			anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+			autoHideDuration={3000}
+		>
 			<Signup />
-		</>
+		</SnackbarProvider>
 	);
 }
 
