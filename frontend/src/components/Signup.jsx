@@ -8,7 +8,9 @@ import LogoHeader from './LogoHeader';
 import FieldsGroup from './FieldsGroup';
 import TermsNotice from './TermsNotice';
 import SubmitButton from './SubmitButton';
+import FooterSignUp from './FooterSignUp';
 import LoginFooter from './LoginFooter';
+import { useNavigate } from 'react-router-dom';
 
 const fullscreenCenterSx = {
 	display: 'flex',
@@ -23,7 +25,7 @@ const columnStackSx = {
 	flexDirection: 'column',
 	gap: '15px',
 	alignItems: 'stretch',
-	mt: '80px',
+	my: '80px',
 	maxWidth: '350px',
 };
 
@@ -33,6 +35,8 @@ const Signup = () => {
 	const { email, username, password } = input;
 
 	const toast = useToast();
+
+	const navigate = useNavigate(); 
 
 	const handleChange = ({ target: { name, value } }) =>
 		setInput(prev => ({ ...prev, [name]: value }));
@@ -50,6 +54,7 @@ const Signup = () => {
 				}
 			);
 			if (data?.success) {
+				navigate('/login')
 				toast.success(data.message);
 				setInput({ email: '', username: '', password: '' });
 			}

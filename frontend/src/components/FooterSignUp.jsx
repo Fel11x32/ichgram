@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-const LoginFooter = () => (
+const FooterSignUp = () => (
 	<Box
 		sx={{
 			display: 'flex',
@@ -13,10 +13,10 @@ const LoginFooter = () => (
 		}}
 	>
 		<Typography sx={{ textAlign: 'center', mr: '6px' }}>
-			Have an account?
-			<Link to="/login">Log in</Link>
+			Don’t have an account?
+			<Link to='/signup'>Sign up</Link>
 		</Typography>
 	</Box>
 );
 
-export default LoginFooter;
+export default FooterSignUp;
