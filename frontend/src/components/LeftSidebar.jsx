@@ -13,31 +13,13 @@ import {
 import { useToast } from '../hooks/useToast';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const sidebarItems = [
-	{ icon: <Home />, text: 'Home' },
-	{ icon: <Search />, text: 'Search' },
-	{ icon: <TrendingUp />, text: 'Explore' },
-	{ icon: <MessageCircle />, text: 'Messages' },
-	{ icon: <Heart />, text: 'Notifications' },
-	{ icon: <PlusSquare />, text: 'Create' },
-	{
-		icon: (
-			<Avatar
-				src='https://github.com/shadcn.png'
-				alt={'profile'}
-				sx={{ width: 24, height: 24, fontSize: 12 }}
-			>
-				CN
-			</Avatar>
-		),
-		text: 'Profile',
-	},
-	{ icon: <LogOut />, text: 'Logout' },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { setAuthUser } from '../redux/authSlice';
 
 const LeftSidebar = () => {
 	const navigate = useNavigate();
+	const { user } = useSelector(store => store.auth);
+	const dispatch = useDispatch();
 	const toast = useToast();
 
 	const logoutHandler = async () => {
@@ -46,6 +28,7 @@ const LeftSidebar = () => {
 				withCredentials: true,
 			});
 			if (res.data.success) {
+				dispatch(setAuthUser(null));
 				navigate('/login');
 				toast.success(res.data.message);
 			}
@@ -67,6 +50,27 @@ const LeftSidebar = () => {
 		if (action) action();
 	};
 
+	const sidebarItems = [
+		{ icon: <Home />, text: 'Home' },
+		{ icon: <Search />, text: 'Search' },
+		{ icon: <TrendingUp />, text: 'Explore' },
+		{ icon: <MessageCircle />, text: 'Messages' },
+		{ icon: <Heart />, text: 'Notifications' },
+		{ icon: <PlusSquare />, text: 'Create' },
+		{
+			icon: (
+				<Avatar
+					src={user?.profilePicture}
+					alt={'profile'}
+					sx={{ width: 24, height: 24, fontSize: 12 }}
+				>
+					CN
+				</Avatar>
+			),
+			text: 'Profile',
+		},
+		{ icon: <LogOut />, text: 'Logout' },
+	];
 
 	return (
 		<Box

@@ -10,6 +10,8 @@ import SubmitButton from '../components/SubmitButton';
 import FooterSignUp from '../components/FooterSignUp';
 import LoginFooter from './LoginFooter';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setAuthUser } from '../redux/authSlice';
 
 const fullscreenCenterSx = {
 	display: 'flex',
@@ -31,10 +33,11 @@ const columnStackSx = {
 const Login = () => {
 	const [input, setInput] = useState({ email: '', password: '' });
 	const [loading, setLoading] = useState(false);
+
 	const { email, password } = input;
 
+	const dispatch = useDispatch();
 	const navigate = useNavigate();
-
 	const toast = useToast();
 
 	const handleChange = ({ target: { name, value } }) =>
@@ -53,6 +56,7 @@ const Login = () => {
 				}
 			);
 			if (data?.success) {
+				dispatch(setAuthUser(data.user))
 				navigate('/')
 				toast.success(data.message || 'Logged in');
 				setInput({ email: '', password: '' });
