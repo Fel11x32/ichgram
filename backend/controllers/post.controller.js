@@ -121,30 +121,12 @@ export const toggleLikePost = async (req, res) => {
 		const alreadyLiked = (post.likes || [])
 			.map(String)
 			.includes(String(userId));
+
 		const update = alreadyLiked
 			? { $pull: { likes: userId } }
 			: { $addToSet: { likes: userId } };
 
 		await Post.updateOne({ _id: postId }, update);
-
-		if (!alreadyLiked) {
-			const postOwnerId = String(post.author);
-			if (postOwnerId !== String(userId)) {
-				const user = await User.findById(userId).select(
-					'username profilePicture'
-				);
-				const postOwnerSocketId = getReceiverSocketId(postOwnerId);
-				if (postOwnerSocketId) {
-					io.to(postOwnerSocketId).emit('notification', {
-						type: 'like',
-						userId,
-						userDetails: user,
-						postId,
-						message: 'Your post was liked',
-					});
-				}
-			}
-		}
 
 		return res.status(200).json({
 			message: alreadyLiked ? 'Post unlike' : 'Post like',

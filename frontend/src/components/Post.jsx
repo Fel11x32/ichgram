@@ -12,11 +12,21 @@ import {
 import { Bookmark, Heart, MessageCircle, MoreHorizontal } from 'lucide-react';
 import React, { useState } from 'react';
 import CommentDialog from './CommentDialog';
+import { useDispatch, useSelector } from 'react-redux';
+import { useToast } from '../hooks/useToast';
+import axios from 'axios';
+import { setPosts } from '../redux/postSlice';
 
-const Post = () => {
+const Post = ({ post }) => {
 	const [open, setOpen] = useState(false);
 	const [openComment, setOpenComment] = useState(false);
 	const [text, setText] = useState('');
+	const toast = useToast();
+	const { user } = useSelector(store => store.auth);
+	const { posts } = useSelector(store => store.post);
+	const [liked, setLiked] = useState(post.likes.includes(user?._id) || false);
+	const [postLike, setPostLike] = useState(post.likes.length);
+	const dispatch = useDispatch();
 
 	const handleOpen = () => setOpen(true);
 	const handleClose = () => setOpen(false);
@@ -25,18 +35,79 @@ const Post = () => {
 		setText(event.target.value);
 	};
 
+	const likeOrDislikeHandler = async () => {
+		try {
+			const { data } = await axios.post(
+				`http://localhost:8000/api/v1/post/${post._id}/like`,
+				null,
+				{ withCredentials: true }
+			);
+			if (!data?.success) return;
+
+			const nextLiked = !liked;
+
+			setLiked(nextLiked);
+			setPostLike(c => c + (nextLiked ? 1 : -1));
+
+			dispatch(
+				setPosts(
+					posts.map(p =>
+						p._id === post._id
+							? {
+									...p,
+									likes: nextLiked
+										? [...p.likes, user._id]
+										: p.likes.filter(id => id !== user._id),
+							  }
+							: p
+					)
+				)
+			);
+		} catch (error) {
+			console.log(error);
+			toast.error(error.response?.data?.message);
+		}
+	};
+
+	const deletePostHandler = async () => {
+		try {
+			const { data } = await axios.delete(
+				`http://localhost:8000/api/v1/post/delete/${post._id}`,
+				{ withCredentials: true }
+			);
+			if (data?.success) {
+				const updatedPostData = posts.filter(
+					postItem => postItem?._id !== post?._id
+				);
+				dispatch(setPosts(updatedPostData));
+				handleClose();
+				toast.success(data.message);
+			}
+		} catch (error) {
+			console.log(error);
+			toast.error(error.response.data.message);
+		}
+	};
+
 	return (
 		<>
-			<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					gap: 1,
+				}}
+			>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 					<Avatar
-						src={undefined}
+						src={post.author.profilePicture}
 						alt='profile_post_image'
 						sx={{ width: 27, height: 27, fontSize: 12 }}
 					>
 						CN
 					</Avatar>
-					<Typography fontWeight={500}>username</Typography>
+					<Typography fontWeight={500}>{post.author.username}</Typography>
 				</Box>
 				<div>
 					<IconButton onClick={handleOpen}>
@@ -68,29 +139,31 @@ const Post = () => {
 							>
 								Add to favorites
 							</Button>
-							<Button
-								variant='text'
-								sx={{
-									cursor: 'pointer',
-									width: 'fit-content',
-									textTransform: 'none',
-								}}
-							>
-								Delete
-							</Button>
+							{user && user?._id === post?.author._id && (
+								<Button
+									onClick={deletePostHandler}
+									variant='text'
+									sx={{
+										cursor: 'pointer',
+										width: 'fit-content',
+										textTransform: 'none',
+									}}
+								>
+									Delete
+								</Button>
+							)}
 						</DialogContent>
 					</Dialog>
 				</div>
 			</Box>
 			<Box
 				component='img'
-				src='https://cdn.pixabay.com/photo/2023/10/30/10/16/tram-8352473_1280.jpg'
+				src={post.image}
 				alt='post image'
 				sx={{
 					borderRadius: '4px',
 					my: 1,
-					width: '100%',
-					maxWidth: '400px',
+					width: '400px',
 					height: '500px',
 					aspectRatio: '1 / 1',
 					objectFit: 'cover',
@@ -112,8 +185,8 @@ const Post = () => {
 						mt: 1,
 					}}
 				>
-					<IconButton size='small'>
-						<Heart />
+					<IconButton onClick={likeOrDislikeHandler} size='small'>
+						{liked ? <Heart fill='red' color='red' /> : <Heart />}
 					</IconButton>
 					<IconButton size='small'>
 						<MessageCircle onClick={() => setOpenComment(true)} />
@@ -133,26 +206,25 @@ const Post = () => {
 						mb: 0.5,
 					}}
 				>
-					2 likes
+					{postLike} likes
 				</Typography>
 
-				<Typography
-					variant='body2'
-					sx={{
-						lineHeight: 1.4,
-						display: 'flex',
-						flexDirection: 'column',
-						gap: '16px',
-					}}
-				>
-					<Box component='span' sx={{ fontWeight: 500, mr: 1 }}>
-						username
-					</Box>
-					Lorem, ipsum dolor sit amet consectetur adipisicing elit. Aspernatur,
-					mollitia!
-				</Typography>
+				{post.caption && (
+					<Typography
+						variant='body2'
+						sx={{
+							lineHeight: 1.4,
+							display: 'flex',
+						}}
+					>
+						<Box component='span' sx={{ fontWeight: 500, mr: 1 }}>
+							{post.author.username}
+						</Box>
+						{post.caption}
+					</Typography>
+				)}
 			</Box>
-
+			
 			<Typography
 				variant='body2'
 				sx={{
@@ -162,7 +234,7 @@ const Post = () => {
 				}}
 				onClick={() => setOpenComment(true)}
 			>
-				View all 10 comments
+				View all {post.comments.length} comments
 			</Typography>
 
 			<CommentDialog

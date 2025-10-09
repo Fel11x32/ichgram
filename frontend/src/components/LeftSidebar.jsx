@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, Box, Typography } from '@mui/material';
 import Logo from '../assets/ichgram-logo.png';
 import {
@@ -15,8 +15,10 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthUser } from '../redux/authSlice';
+import CreatePost from './CreatePost';
 
 const LeftSidebar = () => {
+	const [open, setOpen] = useState(false)
 	const navigate = useNavigate();
 	const { user } = useSelector(store => store.auth);
 	const dispatch = useDispatch();
@@ -40,7 +42,7 @@ const LeftSidebar = () => {
 	const sidebarHandler = textType => {
 		const actions = {
 			Logout: logoutHandler,
-			// Create: () => setOpen(true),
+			Create: () => setOpen(true),
 			// Profile: () => navigate(`/profile/${user?._id}`),
 			Home: () => navigate('/'),
 			Messages: () => navigate('/chat'),
@@ -131,6 +133,8 @@ const LeftSidebar = () => {
 					))}
 				</Box>
 			</Box>
+
+			<CreatePost open={open} setOpen={setOpen}/>
 		</Box>
 	);
 };
