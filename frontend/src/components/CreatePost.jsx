@@ -131,15 +131,15 @@ const CreatePost = ({ open, setOpen }) => {
 					}}
 				>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						<Avatar src={user.profilePicture} alt='img'>
+						<Avatar src={user?.profilePicture} alt='img'>
 							CN
 						</Avatar>
 						<Box>
 							<Typography sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-								{user.username}
+								{user?.username}
 							</Typography>
 							<Typography sx={{ color: 'grey.600', fontSize: '0.8rem' }}>
-								{user.bio}
+								{user?.bio}
 							</Typography>
 						</Box>
 					</Box>

@@ -58,7 +58,10 @@ const SuggestedUserItem = ({ item }) => {
 					width: '80px',
 					height: 28,
 					...(isFollowing
-						? {}
+						? {
+							borderColor: 'red',
+							color: 'red'
+						}
 						: {
 								backgroundColor: '#0095F6',
 								'&:hover': { backgroundColor: '#3192d2' },

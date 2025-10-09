@@ -199,7 +199,7 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 									maxHeight: 384,
 								}}
 							>
-								{comment.map(c => (
+								{comment?.map(c => (
 									<Comment key={c._id} comment={c} />
 								))}
 							</Box>
