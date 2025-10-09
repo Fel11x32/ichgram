@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Box } from '@mui/material';
 
 import { useToast } from '../hooks/useToast';
@@ -11,6 +10,7 @@ import SubmitButton from './SubmitButton';
 import FooterSignUp from './FooterSignUp';
 import LoginFooter from './LoginFooter';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../helpers/api';
 
 const fullscreenCenterSx = {
 	display: 'flex',
@@ -41,20 +41,15 @@ const Signup = () => {
 	const handleChange = ({ target: { name, value } }) =>
 		setInput(prev => ({ ...prev, [name]: value }));
 
-	const handleSubmit = async e => {
+	const handleRegisterSubmit = async e => {
 		e.preventDefault();
 		try {
 			setLoading(true);
-			const { data } = await axios.post(
-				'http://localhost:8000/api/v1/user/register',
-				input,
-				{
-					headers: { 'Content-Type': 'application/json' },
-					withCredentials: true,
-				}
-			);
+			const { data } = await api.post('/user/register', input, {
+				headers: { 'Content-Type': 'application/json' },
+			});
 			if (data?.success) {
-				navigate('/login')
+				navigate('/login');
 				toast.success(data.message);
 				setInput({ email: '', username: '', password: '' });
 			}
@@ -65,10 +60,11 @@ const Signup = () => {
 		}
 	};
 
+
 	return (
 		<Box sx={fullscreenCenterSx}>
 			<Box sx={columnStackSx}>
-				<Panel component='form' onSubmit={handleSubmit}>
+				<Panel component='form' onSubmit={handleRegisterSubmit}>
 					<LogoHeader text='Sign up to see photos and videos from your friends.' />
 					<FieldsGroup
 						email={email}

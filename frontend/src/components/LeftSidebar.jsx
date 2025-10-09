@@ -43,7 +43,7 @@ const LeftSidebar = () => {
 		const actions = {
 			Logout: logoutHandler,
 			Create: () => setOpen(true),
-			// Profile: () => navigate(`/profile/${user?._id}`),
+			Profile: () => navigate(`/profile/${user?._id}`),
 			Home: () => navigate('/'),
 			Messages: () => navigate('/chat'),
 		};

@@ -11,10 +11,10 @@ import {
 } from '@mui/material';
 import React, { useRef, useState } from 'react';
 import { readFileAsDataURL } from '../helpers/fileUtils';
-import axios from 'axios';
 import { useToast } from '../hooks/useToast';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPosts } from '../redux/postSlice';
+import { api } from '../helpers/api';
 
 const CreatePost = ({ open, setOpen }) => {
 	const [file, setFile] = useState('');
@@ -47,27 +47,21 @@ const CreatePost = ({ open, setOpen }) => {
 
 		try {
 			setLoading(true);
-			const { data } = await axios.post(
-				'http://localhost:8000/api/v1/post/addpost',
-				formData,
-				{
-					headers: {
-						'Content-Type': 'multipart/form-data',
-					},
-					withCredentials: true,
-				}
-			);
+			const { data } = await api.post('/post/addpost', formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			});
 			if (data?.success) {
 				dispatch(setPosts([data?.post, ...posts]));
 				toast.success(data?.message);
-				setOpen(false)
+				setOpen(false);
 			}
 		} catch (error) {
-			toast.error(error.response.data.message);
+			toast.error(error?.response?.data?.message || 'Create failed');
 		} finally {
 			setLoading(false);
 		}
 	};
+
 
 	return (
 		<Dialog

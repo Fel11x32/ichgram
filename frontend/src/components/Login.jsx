@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Box, Link } from '@mui/material';
 
 import { useToast } from '../hooks/useToast';
@@ -12,6 +11,7 @@ import LoginFooter from './LoginFooter';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthUser } from '../redux/authSlice';
+import { api } from '../helpers/api';
 
 const fullscreenCenterSx = {
 	display: 'flex',
@@ -43,21 +43,16 @@ const Login = () => {
 	const handleChange = ({ target: { name, value } }) =>
 		setInput(prev => ({ ...prev, [name]: value }));
 
-	const handleSubmit = async e => {
+	const handleLoginSubmit = async e => {
 		e.preventDefault();
 		try {
 			setLoading(true);
-			const { data } = await axios.post(
-				'http://localhost:8000/api/v1/user/login',
-				input,
-				{
-					headers: { 'Content-Type': 'application/json' },
-					withCredentials: true,
-				}
-			);
+			const { data } = await api.post('/user/login', input, {
+				headers: { 'Content-Type': 'application/json' },
+			});
 			if (data?.success) {
-				dispatch(setAuthUser(data.user))
-				navigate('/')
+				dispatch(setAuthUser(data.user));
+				navigate('/');
 				toast.success(data.message || 'Logged in');
 				setInput({ email: '', password: '' });
 			}
@@ -71,7 +66,7 @@ const Login = () => {
 	return (
 		<Box sx={fullscreenCenterSx}>
 			<Box sx={columnStackSx}>
-				<Panel component='form' onSubmit={handleSubmit}>
+				<Panel component='form' onSubmit={handleLoginSubmit}>
 					<LogoHeader />
 
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

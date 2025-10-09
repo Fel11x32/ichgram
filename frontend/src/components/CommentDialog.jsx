@@ -14,10 +14,10 @@ import {
 import { Link } from 'react-router-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
 import { useToast } from '../hooks/useToast';
 import { setPosts } from '../redux/postSlice';
 import Comment from './Comment';
+import { api } from '../helpers/api';
 
 const PostDialog = ({ openComment, setOpenComment }) => {
 	const [optionsOpen, setOptionsOpen] = useState(false);
@@ -47,19 +47,11 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 
 	const sendMessageHandler = async () => {
 		try {
-			const res = await axios.post(
-				`http://localhost:8000/api/v1/post/${selectedPost?._id}/comment`,
-				{ text },
-				{
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					withCredentials: true,
-				}
-			);
-
-			if (res.data.success) {
-				const updatedCommentData = [...comment, res.data.comment];
+			const { data } = await api.post(`/post/${selectedPost?._id}/comment`, {
+				text,
+			});
+			if (data?.success) {
+				const updatedCommentData = [...comment, data.comment];
 				setComment(updatedCommentData);
 
 				const updatedPostData = posts.map(p =>
@@ -68,13 +60,15 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 						: p
 				);
 				dispatch(setPosts(updatedPostData));
-				toast.success(res.data.message);
+				toast.success(data.message);
 				setText('');
 			}
 		} catch (error) {
 			console.log(error);
+			toast.error(error?.response?.data?.message || 'Failed');
 		}
 	};
+
 
 	return (
 		<Dialog open={openComment} onClose={handleClose} maxWidth={false}>

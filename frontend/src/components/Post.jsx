@@ -14,8 +14,8 @@ import React, { useState } from 'react';
 import CommentDialog from './CommentDialog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '../hooks/useToast';
-import axios from 'axios';
 import { setPosts, setSelectedPost } from '../redux/postSlice';
+import { api } from '../helpers/api';
 
 const Post = ({ post }) => {
 	const [open, setOpen] = useState(false);
@@ -37,15 +37,10 @@ const Post = ({ post }) => {
 
 	const likeOrDislikeHandler = async () => {
 		try {
-			const { data } = await axios.post(
-				`http://localhost:8000/api/v1/post/${post._id}/like`,
-				null,
-				{ withCredentials: true }
-			);
+			const { data } = await api.post(`/post/${post._id}/like`);
 			if (!data?.success) return;
 
 			const nextLiked = !liked;
-
 			setLiked(nextLiked);
 			setPostLike(c => c + (nextLiked ? 1 : -1));
 
@@ -65,16 +60,14 @@ const Post = ({ post }) => {
 			);
 		} catch (error) {
 			console.log(error);
-			toast.error(error.response?.data?.message);
+			toast.error(error?.response?.data?.message || 'Failed');
 		}
 	};
 
+
 	const deletePostHandler = async () => {
 		try {
-			const { data } = await axios.delete(
-				`http://localhost:8000/api/v1/post/delete/${post._id}`,
-				{ withCredentials: true }
-			);
+			const { data } = await api.delete(`/post/delete/${post._id}`);
 			if (data?.success) {
 				const updatedPostData = posts.filter(
 					postItem => postItem?._id !== post?._id
@@ -85,25 +78,21 @@ const Post = ({ post }) => {
 			}
 		} catch (error) {
 			console.log(error);
-			toast.error(error.response.data.message);
+			toast.error(error?.response?.data?.message || 'Delete failed');
 		}
 	};
+
 
 	const commentHandler = async e => {
 		if (e) e.preventDefault();
 		const body = text.trim();
 		if (!body || submitting) return;
+
 		try {
 			setSubmitting(true);
-			const { data } = await axios.post(
-				`http://localhost:8000/api/v1/post/${post._id}/comment`,
-				{ text: body },
-				{
-					headers: { 'Content-Type': 'application/json' },
-					withCredentials: true,
-				}
-			);
-
+			const { data } = await api.post(`/post/${post._id}/comment`, {
+				text: body,
+			});
 			if (!data?.success) return;
 
 			const nextComments = [...comments, data.comment];
@@ -122,6 +111,7 @@ const Post = ({ post }) => {
 			setSubmitting(false);
 		}
 	};
+
 
 	return (
 		<>
