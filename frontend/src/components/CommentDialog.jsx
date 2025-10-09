@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	Avatar,
 	Box,
@@ -13,16 +13,67 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { MoreHorizontal } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
+import { useToast } from '../hooks/useToast';
+import { setPosts } from '../redux/postSlice';
+import Comment from './Comment';
 
 const PostDialog = ({ openComment, setOpenComment }) => {
 	const [optionsOpen, setOptionsOpen] = useState(false);
 	const [text, setText] = useState('');
+	const { selectedPost, posts } = useSelector(store => store.post);
+	const [comment, setComment] = useState(selectedPost?.comments);	
+
+	const dispatch = useDispatch();
+	const toast = useToast();
 
 	const handleClose = () => setOpenComment(false);
 
+	useEffect(() => {
+		if (selectedPost) {
+			setComment(selectedPost.comments);
+		}
+	}, [selectedPost]);
+
+	const changeEventHandler = e => {
+		const inputText = e.target.value;
+		if (inputText.trim()) {
+			setText(inputText);
+		} else {
+			setText('');
+		}
+	};
+
 	const sendMessageHandler = async () => {
-		alert(text);
-		setText('')
+		try {
+			const res = await axios.post(
+				`http://localhost:8000/api/v1/post/${selectedPost?._id}/comment`,
+				{ text },
+				{
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					withCredentials: true,
+				}
+			);
+
+			if (res.data.success) {
+				const updatedCommentData = [...comment, res.data.comment];
+				setComment(updatedCommentData);
+
+				const updatedPostData = posts.map(p =>
+					p._id === selectedPost._id
+						? { ...p, comments: updatedCommentData }
+						: p
+				);
+				dispatch(setPosts(updatedPostData));
+				toast.success(res.data.message);
+				setText('');
+			}
+		} catch (error) {
+			console.log(error);
+		}
 	};
 
 	return (
@@ -42,7 +93,7 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 					<Box sx={{ width: '55%' }}>
 						<Box
 							component='img'
-							src='https://cdn.pixabay.com/photo/2023/10/30/10/16/tram-8352473_1280.jpg'
+							src={selectedPost?.image}
 							alt='post_img'
 							sx={{
 								width: '100%',
@@ -72,7 +123,10 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 						>
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
 								<Link style={{ textDecoration: 'none' }} to='#'>
-									<Avatar src='' alt='profile_photo'>
+									<Avatar
+										src={selectedPost?.author?.profilePicture}
+										alt='profile_photo'
+									>
 										CN
 									</Avatar>
 								</Link>
@@ -87,7 +141,7 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 											color: 'inherit',
 										}}
 									>
-										username
+										{selectedPost?.author?.username}
 									</Typography>
 								</Box>
 							</Box>
@@ -144,10 +198,17 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 								p: 2,
 							}}
 						>
-							Lorem ipsum dolor sit amet consectetur adipisicing elit. Hic atque
-							quas obcaecati nam corporis eveniet architecto explicabo nostrum
-							veniam vitae, iste, soluta voluptas, odio amet nisi minima.
-							Ducimus, qui harum!
+							<Box
+								sx={{
+									flex: 1,
+									overflowY: 'auto',
+									maxHeight: 384,
+								}}
+							>
+								{comment.map(c => (
+									<Comment key={c._id} comment={c} />
+								))}
+							</Box>
 						</Box>
 
 						<Box sx={{ p: 2 }}>
@@ -157,7 +218,7 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 									size='small'
 									placeholder='Add a comment...'
 									value={text}
-									onChange={e => setText(e.target.value)}
+									onChange={changeEventHandler}
 									sx={{
 										'& .MuiOutlinedInput-root': {
 											borderRadius: 1,
@@ -168,7 +229,7 @@ const PostDialog = ({ openComment, setOpenComment }) => {
 								<Button
 									variant='outlined'
 									disabled={!text.trim()}
-									onClick={() => sendMessageHandler()}
+									onClick={sendMessageHandler}
 									sx={{ textTransform: 'none' }}
 								>
 									Send

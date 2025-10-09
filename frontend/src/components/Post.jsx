@@ -15,25 +15,25 @@ import CommentDialog from './CommentDialog';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast } from '../hooks/useToast';
 import axios from 'axios';
-import { setPosts } from '../redux/postSlice';
+import { setPosts, setSelectedPost } from '../redux/postSlice';
 
 const Post = ({ post }) => {
 	const [open, setOpen] = useState(false);
 	const [openComment, setOpenComment] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 	const [text, setText] = useState('');
 	const toast = useToast();
 	const { user } = useSelector(store => store.auth);
 	const { posts } = useSelector(store => store.post);
 	const [liked, setLiked] = useState(post.likes.includes(user?._id) || false);
 	const [postLike, setPostLike] = useState(post.likes.length);
+	const [comments, setComments] = useState(
+		Array.isArray(post.comments) ? post.comments : []
+	);
 	const dispatch = useDispatch();
 
 	const handleOpen = () => setOpen(true);
 	const handleClose = () => setOpen(false);
-
-	const changeEventHandler = event => {
-		setText(event.target.value);
-	};
 
 	const likeOrDislikeHandler = async () => {
 		try {
@@ -86,6 +86,40 @@ const Post = ({ post }) => {
 		} catch (error) {
 			console.log(error);
 			toast.error(error.response.data.message);
+		}
+	};
+
+	const commentHandler = async e => {
+		if (e) e.preventDefault();
+		const body = text.trim();
+		if (!body || submitting) return;
+		try {
+			setSubmitting(true);
+			const { data } = await axios.post(
+				`http://localhost:8000/api/v1/post/${post._id}/comment`,
+				{ text: body },
+				{
+					headers: { 'Content-Type': 'application/json' },
+					withCredentials: true,
+				}
+			);
+
+			if (!data?.success) return;
+
+			const nextComments = [...comments, data.comment];
+			setComments(nextComments);
+
+			const updatedPosts = posts.map(p =>
+				p._id === post._id ? { ...p, comments: nextComments } : p
+			);
+			dispatch(setPosts(updatedPosts));
+
+			toast.success(data.message || 'Comment added');
+			setText('');
+		} catch (error) {
+			toast.error(error?.response?.data?.message || 'Failed to add comment');
+		} finally {
+			setSubmitting(false);
 		}
 	};
 
@@ -189,7 +223,12 @@ const Post = ({ post }) => {
 						{liked ? <Heart fill='red' color='red' /> : <Heart />}
 					</IconButton>
 					<IconButton size='small'>
-						<MessageCircle onClick={() => setOpenComment(true)} />
+						<MessageCircle
+							onClick={() => {
+								dispatch(setSelectedPost(post));
+								setOpenComment(true);
+							}}
+						/>
 					</IconButton>
 				</Box>
 				<IconButton size='small'>
@@ -224,25 +263,43 @@ const Post = ({ post }) => {
 					</Typography>
 				)}
 			</Box>
-			
+
 			<Typography
 				variant='body2'
-				sx={{
-					cursor: 'pointer',
-					fontSize: '0.875rem',
-					color: 'grey.500',
+				sx={{ cursor: 'pointer', fontSize: '0.875rem', color: 'grey.500' }}
+				onClick={() => {
+					dispatch(setSelectedPost(post));
+					setOpenComment(true);
 				}}
-				onClick={() => setOpenComment(true)}
 			>
-				View all {post.comments.length} comments
+				{comments.length > 0 && (
+					<Typography
+						component='span'
+						onClick={() => {
+							dispatch(setSelectedPost(post));
+							setOpenComment(true);
+						}}
+						variant='body2'
+						sx={{
+							cursor: 'pointer',
+							fontSize: '0.875rem',
+							color: 'grey.500',
+						}}
+					>
+						View all {comments.length} comments
+					</Typography>
+				)}
 			</Typography>
 
 			<CommentDialog
 				openComment={openComment}
 				setOpenComment={setOpenComment}
+				comments={comments}
 			/>
 
 			<Box
+				component='form'
+				onSubmit={commentHandler}
 				sx={{
 					display: 'flex',
 					alignItems: 'center',
@@ -252,7 +309,13 @@ const Post = ({ post }) => {
 			>
 				<InputBase
 					value={text}
-					onChange={changeEventHandler}
+					onChange={event => setText(event.target.value)}
+					onKeyDown={e => {
+						if (e.key === 'Enter' && !e.shiftKey) {
+							e.preventDefault();
+							commentHandler();
+						}
+					}}
 					type='text'
 					placeholder='Add a comment...'
 					sx={{
@@ -261,18 +324,14 @@ const Post = ({ post }) => {
 						outline: 'none',
 					}}
 				/>
-				{text && (
-					<Typography
-						sx={{
-							color: '#3BADF8',
-							cursor: 'pointer',
-							fontWeight: 500,
-							ml: 1,
-						}}
-					>
-						Post
-					</Typography>
-				)}
+				<Button
+					type='submit'
+					size='small'
+					disabled={submitting || text.trim().length === 0}
+					sx={{ textTransform: 'none', fontWeight: 500, minWidth: 64 }}
+				>
+					{submitting ? 'Posting…' : 'Post'}
+				</Button>
 			</Box>
 		</>
 	);
