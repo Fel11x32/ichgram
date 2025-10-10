@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { Avatar, Box, Typography } from '@mui/material';
 import Logo from '../assets/ichgram-logo.png';
+import {
+	Box,
+	Divider,
+	Typography,
+	List,
+	ListItemButton,
+	ListItemIcon,
+	ListItemText,
+	Avatar,
+	IconButton,
+	Popover,
+	Badge,
+	Button as MUIButton,
+	Stack,
+} from '@mui/material';
 import {
 	Heart,
 	Home,
@@ -10,50 +24,60 @@ import {
 	Search,
 	TrendingUp,
 } from 'lucide-react';
-import { useToast } from '../hooks/useToast';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthUser } from '../redux/authSlice';
 import CreatePost from './CreatePost';
+import { setPosts, setSelectedPost } from '../redux/postSlice';
+import { useToast } from '../hooks/useToast';
+import LogoHeader from './LogoHeader';
+import { api } from '../helpers/api';
+import { clearNotifications } from '../redux/rtnSlice';
 
 const LeftSidebar = () => {
-	const [open, setOpen] = useState(false)
 	const navigate = useNavigate();
-	const { user } = useSelector(store => store.auth);
 	const dispatch = useDispatch();
 	const toast = useToast();
 
+	const { user } = useSelector(store => store.auth);
+	const { likeNotification = [] } = useSelector(
+		store => store.realTimeNotification
+	);
+
+	const [openCreate, setOpenCreate] = useState(false);
+	const [notifAnchor, setNotifAnchor] = useState(null);
+
 	const logoutHandler = async () => {
 		try {
-			const res = await axios.post('http://localhost:8000/api/v1/user/logout', {
-				withCredentials: true,
-			});
-			if (res.data.success) {
+			const { data } = await api.post('user/logout');
+			if (data?.success) {
 				dispatch(setAuthUser(null));
+				dispatch(setSelectedPost(null));
+				dispatch(setPosts([]));
 				navigate('/login');
-				toast.success(res.data.message);
+				toast.success(data?.message);
 			}
 		} catch (error) {
-			toast.error(error.response.data.message);
+			toast.error(error?.response?.data?.message || 'Logout failed');
 		}
 	};
 
 	const sidebarHandler = textType => {
-		const actions = {
-			Logout: logoutHandler,
-			Create: () => setOpen(true),
-			Profile: () => navigate(`/profile/${user?._id}`),
-			Home: () => navigate('/'),
-			Messages: () => navigate('/chat'),
-		};
-
-		const action = actions[textType];
-		if (action) action();
+		if (textType === 'Logout') {
+			logoutHandler();
+		} else if (textType === 'Create') {
+			setOpenCreate(true);
+		} else if (textType === 'Profile') {
+			navigate(`/profile/${user?._id}`);
+		} else if (textType === 'Home') {
+			navigate('/');
+		} else if (textType === 'Messages') {
+			navigate('/chat');
+		}
 	};
 
 	const sidebarItems = [
-		{ icon: <Home />, text: 'Home' },
+		{ icon: <Home width='24px' />, text: 'Home' },
 		{ icon: <Search />, text: 'Search' },
 		{ icon: <TrendingUp />, text: 'Explore' },
 		{ icon: <MessageCircle />, text: 'Messages' },
@@ -61,11 +85,7 @@ const LeftSidebar = () => {
 		{ icon: <PlusSquare />, text: 'Create' },
 		{
 			icon: (
-				<Avatar
-					src={user?.profilePicture}
-					alt={'profile'}
-					sx={{ width: 24, height: 24, fontSize: 12 }}
-				>
+				<Avatar src={user?.profilePicture} className='w-6 h-6'>
 					CN
 				</Avatar>
 			),
@@ -74,6 +94,16 @@ const LeftSidebar = () => {
 		{ icon: <LogOut />, text: 'Logout' },
 	];
 
+	const handleNotifClick = event => {
+		setNotifAnchor(event.currentTarget);
+	};
+	const handleNotifClose = () => {
+		dispatch(clearNotifications());
+		setNotifAnchor(null);
+	};
+
+	const notifOpen = Boolean(notifAnchor);
+
 	return (
 		<Box
 			sx={{
@@ -81,60 +111,123 @@ const LeftSidebar = () => {
 				top: 0,
 				left: 0,
 				zIndex: 10,
-				px: 2,
 				borderRight: '1px solid',
-				borderColor: 'grey.300',
-				width: 'auto',
+				borderColor: 'divider',
+				pl: 2,
+				pr: 6,
 				height: '100vh',
+				display: 'flex',
+				flexDirection: 'column',
 			}}
 		>
 			<Box
-				sx={{
-					display: 'flex',
-					flexDirection: 'column',
-				}}
-			>
-				<Box
-					component='img'
-					src={Logo}
-					alt='Logo'
-					sx={{ width: '97px', mt: '28px' }}
-				/>
-				<Box
-					sx={{
-						display: 'flex',
-						flexDirection: 'column',
-						gap: '17px',
+				component='img'
+				src={Logo}
+				alt='Logo'
+				sx={{ width: '97px', mt: '28px' }}
+			/>
+			<Divider />
 
-						mt: '22px',
-					}}
-				>
-					{sidebarItems.map(item => (
-						<Box
-							onClick={() => sidebarHandler(item.text)}
-							key={item.text}
+			<List sx={{ mt: 1 }}>
+				{sidebarItems.map((item, idx) => {
+					const isNotifications = item.text === 'Notifications';
+					return (
+						<ListItemButton
+							key={idx}
+							onClick={e => {
+								if (isNotifications) {
+									handleNotifClick(e);
+								} else {
+									sidebarHandler(item.text);
+								}
+							}}
 							sx={{
-								display: 'flex',
-								alignItems: 'center',
-								p: '8px 12px',
-								borderRadius: '8px',
-								cursor: 'pointer',
-								transition: 'background-color 0.2s ease',
-								'&:hover': {
-									backgroundColor: 'grey.100',
-								},
+								my: 0.75,
+								px: 1.5,
+								'&:hover': { backgroundColor: 'grey.100' },
 							}}
 						>
-							{item.icon}
-							<Typography sx={{ fontSize: 20, ml: '10px' }}>
-								{item.text}
-							</Typography>
-						</Box>
-					))}
-				</Box>
-			</Box>
+							<ListItemIcon>
+								{isNotifications ? (
+									<Badge
+										color='error'
+										badgeContent={likeNotification.length || 0}
+										overlap='circular'
+									>
+										{item.icon}
+									</Badge>
+								) : (
+									item.icon
+								)}
+							</ListItemIcon>
+							<ListItemText
+								primary={item.text}
+								primaryTypographyProps={{ fontSize: 14 }}
+								sx={{ display: { xs: 'none', md: 'block' } }}
+							/>
+						</ListItemButton>
+					);
+				})}
+			</List>
 
-			<CreatePost open={open} setOpen={setOpen}/>
+			<Popover
+				open={notifOpen}
+				anchorEl={notifAnchor}
+				onClose={handleNotifClose}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+				PaperProps={{ sx: { p: 1, width: 280 } }}
+			>
+				<Box>
+					{likeNotification.length === 0 ? (
+						<Typography sx={{ px: 1, py: 0.5, fontSize: 14 }}>
+							No new notification
+						</Typography>
+					) : (
+						<Stack spacing={1}>
+							{likeNotification.map(notification => (
+								<Stack
+									key={notification.userId}
+									direction='row'
+									alignItems='center'
+									spacing={1.25}
+								>
+									<Avatar sx={{ width: 36, height: 36 }}>
+										{notification.userDetails?.profilePicture ? (
+											<img
+												src={notification.userDetails.profilePicture}
+												alt='u'
+												style={{
+													width: '100%',
+													height: '100%',
+													objectFit: 'cover',
+												}}
+											/>
+										) : (
+											(notification.userDetails?.username || 'CN')
+												.slice(0, 2)
+												.toUpperCase()
+										)}
+									</Avatar>
+									<Typography sx={{ fontSize: 14 }}>
+										<b>{notification.userDetails?.username}</b> liked your post
+									</Typography>
+								</Stack>
+							))}
+						</Stack>
+					)}
+					<MUIButton
+						onClick={handleNotifClose}
+						fullWidth
+						size='small'
+						sx={{ mt: 1, textTransform: 'none' }}
+					>
+						Close
+					</MUIButton>
+				</Box>
+			</Popover>
+
+			<CreatePost open={openCreate} setOpen={setOpenCreate} />
 		</Box>
 	);
 };

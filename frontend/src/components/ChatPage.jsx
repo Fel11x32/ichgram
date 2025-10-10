@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	Box,
 	Avatar,
@@ -17,16 +17,46 @@ import { MessageCircleCode } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedUser } from '../redux/authSlice';
 import Messages from './Messages';
+import { api } from '../helpers/api';
+import { setMessages } from '../redux/chatSlice';
 
 const ChatPage = () => {
-	const { user, suggestedUsers, selectedUser } = useSelector(
+	const [textMessage, setTextMessage] = useState('');
+	const { suggestedUsers, selectedUser } = useSelector(
 		store => store.auth
 	);
+	const { onlineUsers, messages } = useSelector(store => store.chat);
 	const dispatch = useDispatch();
-	let isOnline = true;
+
+	const sendMessageHandler = async receiverId => {
+		try {
+			const { data } = await api.post(`/message/send/${receiverId}`, {
+				textMessage,
+			});
+			if (data?.success) {
+				dispatch(setMessages([...messages, data.newMessage]));
+				setTextMessage('');
+			}
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
+	useEffect(() => {
+		return () => {
+			dispatch(setSelectedUser(null));
+		};
+	}, [dispatch]);
 
 	return (
-		<Box sx={{ display: 'flex', ml: { md: '16%' }, height: '100vh', overflowY: 'hidden', }}>
+		<Box
+			sx={{
+				display: 'flex',
+				ml: { md: '16%' },
+				height: '100vh',
+				overflowY: 'hidden',
+			}}
+		>
 			<Box
 				component='section'
 				sx={{
@@ -46,46 +76,49 @@ const ChatPage = () => {
 
 				<Box sx={{ overflowY: 'auto', height: '80vh' }}>
 					<List disablePadding>
-						{suggestedUsers.map((suggestedUser, i) => (
-							<ListItem
-								onClick={() => dispatch(setSelectedUser(suggestedUser))}
-								key={i}
-								sx={{
-									gap: 1.5,
-									py: 1,
-									px: 1.5,
-									cursor: 'pointer',
-									'&:hover': { backgroundColor: 'grey.50' },
-								}}
-							>
-								<ListItemAvatar>
-									<Avatar
-										src={suggestedUser?.profilePicture}
-										sx={{ width: 56, height: 56, fontSize: 12 }}
-									>
-										CN
-									</Avatar>
-								</ListItemAvatar>
-								<ListItemText
-									primary={
-										<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
-											{suggestedUser?.username}
-										</Typography>
-									}
-									secondary={
-										<Typography
-											sx={{
-												fontSize: '0.75rem',
-												fontWeight: 700,
-												color: isOnline ? 'success.main' : 'error.main',
-											}}
+						{suggestedUsers.map((suggestedUser, i) => {
+							const isOnline = onlineUsers.includes(suggestedUser?._id);
+							return (
+								<ListItem
+									onClick={() => dispatch(setSelectedUser(suggestedUser))}
+									key={i}
+									sx={{
+										gap: 1.5,
+										py: 1,
+										px: 1.5,
+										cursor: 'pointer',
+										'&:hover': { backgroundColor: 'grey.50' },
+									}}
+								>
+									<ListItemAvatar>
+										<Avatar
+											src={suggestedUser?.profilePicture}
+											sx={{ width: 56, height: 56, fontSize: 12 }}
 										>
-											{isOnline ? 'online' : 'offline'}
-										</Typography>
-									}
-								/>
-							</ListItem>
-						))}
+											CN
+										</Avatar>
+									</ListItemAvatar>
+									<ListItemText
+										primary={
+											<Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+												{suggestedUser?.username}
+											</Typography>
+										}
+										secondary={
+											<Typography
+												sx={{
+													fontSize: '0.75rem',
+													fontWeight: 700,
+													color: isOnline ? 'success.main' : 'error.main',
+												}}
+											>
+												{isOnline ? 'online' : 'offline'}
+											</Typography>
+										}
+									/>
+								</ListItem>
+							);
+						})}
 					</List>
 				</Box>
 			</Box>
@@ -140,6 +173,8 @@ const ChatPage = () => {
 						}}
 					>
 						<TextField
+							value={textMessage}
+							onChange={event => setTextMessage(event.target.value)}
 							fullWidth
 							placeholder='Messages...'
 							variant='outlined'
@@ -153,6 +188,7 @@ const ChatPage = () => {
 							}}
 						/>
 						<Button
+							onClick={() => sendMessageHandler(selectedUser?._id)}
 							variant='contained'
 							sx={{ textTransform: 'none', boxShadow: 'none' }}
 						>

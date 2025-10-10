@@ -3,6 +3,7 @@ import express, { urlencoded } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './utils/db.js';
+import { app, server } from './socket/socket.js';
 
 import './models/user.model.js';
 import './models/post.model.js';
@@ -11,8 +12,6 @@ import './models/comment.model.js';
 import userRoutes from './routes/user.route.js';
 import postRoutes from './routes/post.route.js';
 import messageRoutes from './routes/message.route.js';
-
-const app = express();
 
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
@@ -38,7 +37,7 @@ const PORT = process.env.PORT || 3000;
 
 try {
 	await connectDB();
-	app.listen(PORT, () => {
+	server.listen(PORT, () => {
 		console.log(`Server listening on http://localhost:${PORT}`);
 	});
 } catch (err) {

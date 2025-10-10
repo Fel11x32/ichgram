@@ -3,6 +3,7 @@ import cloudinary from '../utils/cloudinary.js';
 import { Post } from '../models/post.model.js';
 import { User } from '../models/user.model.js';
 import { Comment } from '../models/comment.model.js';
+import { getReceiverSocketId, io } from '../socket/socket.js';
 
 export const addNewPost = async (req, res) => {
 	try {
@@ -109,31 +110,55 @@ export const getUserPost = async (req, res) => {
 
 export const toggleLikePost = async (req, res) => {
 	try {
-		const userId = req.id;
-		const postId = req.params.id;
+		const userId = String(req.id);
+		const postId = String(req.params.id);
 
 		const post = await Post.findById(postId);
-		if (!post)
+		if (!post) {
 			return res
 				.status(404)
 				.json({ message: 'Post not found', success: false });
+		}
 
-		const alreadyLiked = (post.likes || [])
-			.map(String)
-			.includes(String(userId));
-
+		const alreadyLiked = (post.likes || []).map(String).includes(userId);
 		const update = alreadyLiked
 			? { $pull: { likes: userId } }
 			: { $addToSet: { likes: userId } };
 
 		await Post.updateOne({ _id: postId }, update);
 
+		const postOwnerId = String(post.author);
+		const isSelfAction = postOwnerId === userId;
+
+		if (!isSelfAction) {
+			const receiverSocketId = getReceiverSocketId(postOwnerId);
+			if (receiverSocketId) {
+				const actor = await User.findById(userId)
+					.select('username profilePicture')
+					.lean();
+
+				const notification = {
+					type: alreadyLiked ? 'unlike' : 'like',
+					userId,
+					userDetails: actor,
+					postId,
+					message: alreadyLiked
+						? 'Your post like was removed'
+						: 'Your post was liked',
+					createdAt: new Date().toISOString(),
+				};
+
+				io.to(receiverSocketId).emit('notification', notification);
+			}
+		}
+
 		return res.status(200).json({
-			message: alreadyLiked ? 'Post unlike' : 'Post like',
+			message: alreadyLiked ? 'Post unliked' : 'Post liked',
+			liked: !alreadyLiked,
 			success: true,
 		});
 	} catch (error) {
-		console.error(error);
+		console.error('toggleLikePost error:', error);
 		return res.status(500).json({ message: 'Server error', success: false });
 	}
 };

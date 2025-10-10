@@ -1,75 +1,103 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
 import {
 	Box,
 	Avatar,
-	Typography,
 	Button,
-	Stack,
-	Divider,
-	Paper,
+	Typography,
+	Link as MuiLink,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import useGetRTM from '../hooks/useGetRTM';
+import useGetAllMessage from '../hooks/useGetAllMessage';
 
 const Messages = ({ selectedUser }) => {
-	const { messages = [] } = useSelector(s => s.chat || {});
-	const { user } = useSelector(s => s.auth || {});
+	useGetRTM();
+	useGetAllMessage();
+	const { messages } = useSelector(store => store.chat);
+	const { user } = useSelector(store => store.auth);
 
 	return (
-		<Box sx={{ overflowY: 'auto', flex: 1, p: 2 }}>
-			<Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-				<Stack alignItems='center' spacing={1}>
-					<Avatar
-						src={selectedUser?.profilePicture}
-						alt='profile'
-						sx={{ width: 80, height: 80 }}
-					>
-						{selectedUser?.username?.slice(0, 2)?.toUpperCase() || 'CN'}
-					</Avatar>
-					<Typography>{selectedUser?.username}</Typography>
+		<Box
+			sx={{
+				flex: 1,
+				overflowY: 'auto',
+				p: 2,
+				display: 'flex',
+				flexDirection: 'column',
+			}}
+		>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'center',
+					flexDirection: 'column',
+					mb: 3,
+				}}
+			>
+				<Avatar
+					src={selectedUser?.profilePicture}
+					alt='profile'
+					sx={{ width: 80, height: 80, mb: 1 }}
+				>
+					CN
+				</Avatar>
+
+				<Typography variant='subtitle1' sx={{ fontWeight: 500 }}>
+					{selectedUser?.username}
+				</Typography>
+
+				<MuiLink
+					component={Link}
+					to={`/profile/${selectedUser?._id}`}
+					underline='none'
+					sx={{ mt: 1.5 }}
+				>
 					<Button
 						variant='outlined'
 						size='small'
-						component={Link}
-						to={`/profile/${selectedUser?._id}`}
-						sx={{ height: 32, textTransform: 'none' }}
+						sx={{ textTransform: 'none', height: 32 }}
 					>
 						View profile
 					</Button>
-				</Stack>
+				</MuiLink>
 			</Box>
 
-			<Divider sx={{ mb: 2 }} />
+			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+				{messages?.map(msg => {
+					const myId = String(user?._id || '');
+					const fromId = String(
+						(msg?.senderId && (msg.senderId._id || msg.senderId)) ??
+							(msg?.sender && (msg.sender._id || msg.sender)) ??
+							''
+					);
+					const isMine = myId && fromId && myId === fromId;
 
-			<Stack spacing={1.25}>
-				{messages.map(msg => {
-					const mine = String(msg.senderId) === String(user?._id);
 					return (
 						<Box
 							key={msg._id}
 							sx={{
 								display: 'flex',
-								justifyContent: mine ? 'flex-end' : 'flex-start',
+								justifyContent: isMine ? 'flex-end' : 'flex-start',
 							}}
 						>
-							<Paper
-								elevation={0}
+							<Box
 								sx={{
-									px: 1.5,
-									py: 1,
-									maxWidth: 420,
+									p: 1.2,
 									borderRadius: 2,
+									maxWidth: '70%',
 									wordBreak: 'break-word',
-									bgcolor: mine ? 'primary.main' : 'grey.200',
-									color: mine ? '#fff' : 'text.primary',
+									bgcolor: isMine ? 'primary.main' : 'grey.200',
+									color: isMine ? 'common.white' : 'text.primary',
 								}}
 							>
-								<Typography variant='body2'>{msg.message}</Typography>
-							</Paper>
+								{msg.message}
+							</Box>
 						</Box>
 					);
 				})}
-			</Stack>
+			</Box>
 		</Box>
 	);
 };
